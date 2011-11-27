@@ -22,6 +22,8 @@ or::
 
 To see which selectors to use.
 
+The script also needs user mountable entry in /etc/fstab.
+
 There are also some hardcoded values in the install script, but you should get the basic idea.
 
 
