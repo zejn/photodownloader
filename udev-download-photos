@@ -1,6 +1,9 @@
 #!/bin/bash
 
-su - hruske -c 'DISPLAY=:0 /usr/local/bin/sync-photos'
+if [ -b "/dev/fotoaparat" ]
+then
+	su - hruske -c 'DISPLAY=:0 /usr/local/bin/sync-photos'
+fi
 
 
 

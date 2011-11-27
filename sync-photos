@@ -105,7 +105,7 @@ class MainFrame(wx.Frame):
 		if self.count <= len(self.filelist):
 			fn = self.filelist[self.count-1]
 			
-			if (not os.path.exists(os.path.join(SRC, fn))) or OVERWRITE:
+			if (not os.path.exists(os.path.join(DEST, fn))) or OVERWRITE:
 				print 'Copying: %s' % (os.path.join(SRC, fn),)
 				shutil.copy(os.path.join(SRC, fn), DEST)
 			if DELETE:
