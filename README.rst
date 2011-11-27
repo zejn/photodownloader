@@ -16,7 +16,7 @@ Udev rule is device specific and must be rewritten for each device. You can use:
 
 	udevadm test /sys/block/sdb/sdb1
 
-or
+or::
 
 	udevadm info -a -p /sys/block/sdb/sdb1
 
