@@ -1,0 +1,123 @@
+#!/usr/bin/python
+# coding: utf-8
+
+import atexit
+import os
+import shutil
+import subprocess
+from ConfigParser import ConfigParser
+
+import wx
+
+conf = ConfigParser()
+if os.path.exists('photodownloader.ini'):
+	conf.read('photodownloader.ini')
+else:
+	conf.read(os.path.expanduser('~/.photodownloader.ini'))
+
+SRC = os.path.expanduser(conf.get('photodownloader', 'src'))
+DEST = os.path.expanduser(conf.get('photodownloader', 'dest'))
+DELETE = conf.getboolean('photodownloader', 'delete')
+AUTOMOUNT = conf.getboolean('photodownloader', 'automount')
+MOUNTPOINT = os.path.expanduser(conf.get('photodownloader', 'mountpoint'))
+OVERWRITE = conf.getboolean('photodownloader', 'overwrite')
+
+def unmount(*args, **kwargs):
+	try:
+		subprocess.check_call(['/bin/umount', MOUNTPOINT])
+	except Exception, e:
+		pass
+atexit.register(unmount)
+
+#print DEST, DELETE
+
+topframe = None
+
+class MainApp(wx.App):
+	"""Class Main App."""
+	def OnInit(self):
+		"""Init Main App."""
+		return True
+
+class MainFrame(wx.Frame):
+	def OnInit(self):
+		self.filelist = []
+		
+		self.count = 0
+		self.working = True
+		self.mounted = False
+		self.dlg = wx.ProgressDialog("Kopiranje slik ...",
+							"Slike se kopirajo, počakaj ... ",
+							maximum=100,
+							parent=topframe,
+							style = wx.PD_APP_MODAL
+								#| wx.PD_CAN_ABORT
+								| wx.PD_ELAPSED_TIME
+								#| wx.PD_ESTIMATED_TIME
+								| wx.PD_REMAINING_TIME)
+		self.dlg.SetPosition(wx.Point(200,200))
+		self.dlg.Show(True)
+		self.Bind(wx.EVT_IDLE, self.OnIdle)
+		return True
+	
+	def OnIdle(self, event):
+		global topframe
+		
+		if self.working and not self.mounted:
+			print 'Mounting %s' % MOUNTPOINT
+			try:
+				subprocess.check_call(['/bin/mount', MOUNTPOINT])
+				self.mounted = True
+			except Exception, e:
+				print e, 2
+				import traceback
+				traceback.print_exc()
+				self.working = False
+				self.dlg.Hide()
+				wx.GetApp().ExitMainLoop()
+				return
+			else:
+				self.filelist = [i for i in os.listdir(SRC) if not i.startswith('.')]
+		
+		if not self.working and self.mounted:
+			print 'Unmounting %s' % MOUNTPOINT
+			try:
+				subprocess.check_call(['/bin/umount', MOUNTPOINT])
+				self.mounted = False
+			except Exception, e:
+				print e, 1
+			else:
+				self.dlg.Hide()
+				wx.GetApp().ExitMainLoop()
+			return
+		
+		#print self.GetExitOnFrameDelete()
+		self.count += 1
+		if self.count > len(self.filelist):
+			if self.working:
+				self.working = False
+				event.RequestMore()
+			else:
+				self.dlg.Hide()
+				wx.GetApp().ExitMainLoop()
+				return
+		
+		if self.count <= len(self.filelist):
+			fn = self.filelist[self.count-1]
+			
+			if (not os.path.exists(os.path.join(SRC, fn))) or OVERWRITE:
+				print 'Copying: %s' % (os.path.join(SRC, fn),)
+				shutil.copy(os.path.join(SRC, fn), DEST)
+			if DELETE:
+				print 'Deleting: %s' % (os.path.join(SRC, fn),)
+				os.remove(os.path.join(SRC, fn))
+			self.dlg.Update(self.count*100/len(self.filelist))
+			self.dlg.SetTitle('%s%% prekopirano' % (self.count*100/len(self.filelist)))
+			event.RequestMore()
+
+if __name__ == "__main__":
+	app = MainApp(False)
+	topframe = MainFrame(None, title="Hello World", size=(300,200))
+	topframe.OnInit()
+	app.SetTopWindow(topframe)
+	app.MainLoop()

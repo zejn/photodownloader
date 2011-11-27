@@ -1,0 +1,6 @@
+#!/bin/bash
+
+su - hruske -c 'DISPLAY=:0 /usr/local/bin/sync-photos'
+
+
+

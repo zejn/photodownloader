@@ -1,0 +1,21 @@
+
+# use
+#   udevadm monitor
+# and plug in the camera to see the path of the newly appeared partition
+# and use that path in
+#   udevadm info -a -p <path>
+# to see the device node and parents.
+# use that info to "select" the device.
+
+
+SUBSYSTEM=="block",
+SUBSYSTEMS=="block",
+SUBSYSTEMS=="usb",
+DRIVERS=="usb-storage",
+ACTION=="add",
+ATTRS{vendor}=="Sony    ",
+ATTRS{idVendor}=="054c",
+ATTRS{idProduct}=="0010",
+ATTR{partition}=="1",
+SYMLINK+="fotoaparat",
+RUN+="/usr/local/bin/udev-download-photos"
